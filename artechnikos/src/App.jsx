@@ -1,6 +1,6 @@
 /*Imports */
 import { useState, useEffect } from "react";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 import {db} from "./firebase.js";
 
 export default function App() {
@@ -17,37 +17,52 @@ function Formular() {
   const[valueNN, setValueNN] = useState('');
   const[valueA, setValueA] = useState('');
   const[clickAl, setClickAl] = useState(false);
+  const[array, setArray] = useState([]);
+  const[arrayG, setArrayG] = useState([]);
+
    
   const addFormular = async() => {
      try {
-       if(valueA.trim() != '' && valueNN.trim() != '' && valueVN.trim() != '') {
+      if(valueA.trim() !== '' && valueNN.trim() !== '' && valueVN.trim() !== '') {
          await addDoc(collection(db, "FormTest"), {
           name: valueVN + ',' + valueNN,
           age: valueA
          });
-         setValueVN('');
-         setValueNN('');
-         setValueA('');
-         const newClickAl = true;
-         setClickAl(newClickAl);
-         localStorage.setItem('clickAlready', newClickAl);
+        
+        const newClickAl = true;
+        setClickAl(newClickAl);
+        localStorage.setItem('clickAlready', newClickAl);
        }
       
      } catch(e) {
       alert(e);
      }
   };
-
+  const checkDataOnSnap = onSnapshot(collection(db, "FormTest"), (snapshot) => {
+      const datas = snapshot.docs.map(doc => ({
+        ...doc.data(),
+      }));
+      setArray(datas);
+  });
+  const checkDataGetD = async() => {
+     const snapshot = await getDocs(collection(db, "FormTest"));
+     const datas = snapshot.docs.map(doc =>  ({
+       ...doc.data(),
+     }));
+     setArrayG(datas);
+  };
   const checkClickAlready = () => {
     if(localStorage.getItem('clickAlready') == "true") {
-      setClickAl(true);
-    } else {
-      setClickAl(false);
-    }
-  };
+       setClickAl(true);
+  } else {
+       setClickAl(false);
+     }
+   };
 
   useEffect(() => {
-     checkClickAlready();
+    checkClickAlready();
+    checkDataOnSnap();
+    checkDataGetD();
   }, []);
   return (
    <div className="flex flex-col w-full justify-center items-center gap-3">
@@ -58,13 +73,25 @@ function Formular() {
      ): (
       <>
          <div className="font-bold">Fomular</div>
-         <input type="text" placeholder="Vorname..." onChange={(e) => setValueVN(e.target.value)} className="text-white bg-black p-2"/>
-         <input type="text" placeholder="Nachname..." onChange={(e) => setValueNN(e.target.value)} className="text-white bg-black p-2"/>
-         <input type="text" placeholder="Alter..." onChange={(e) => setValueA(e.target.value)} className="text-white bg-black p-2"/>
-         <button onClick={addFormular}>Abschicken</button>  
+         <input type="text" placeholder="Vorname..." onChange={(e) => setValueVN(e.target.value)} className="text-white bg-black p-2" value={valueVN}/>
+          {valueVN}
+         <input type="text" placeholder="Nachname..." onChange={(e) => setValueNN(e.target.value)} className="text-white bg-black p-2" value={valueNN}/>
+          {valueNN}
+         <input type="text" placeholder="Alter..." onChange={(e) => setValueA(e.target.value)} className="text-white bg-black p-2" value={valueA}/>
+           {valueA}
+         <button onClick={addFormular} className="bg-red-500">Abschicken</button>  
       </>
      )}
-    
+    <div className="w-full flex flex-col items-center gap-5">
+      Formular Test onSnapshot:
+      {array.map((item, index) => (
+       <span key={index}>Name:{item.name}, Age: {item.age}</span>
+      ))}
+      Formular Test getDocs:
+      {arrayG.map((item, index) => (
+       <span key={index}>Name:{item.name}, Age: {item.age}</span>
+      ))}
+      </div>
    </div>
   );
 }
