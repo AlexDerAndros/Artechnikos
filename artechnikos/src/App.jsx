@@ -1,10 +1,21 @@
 /* Imports */
 import { useState, useEffect } from "react";
 import { addDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
-import { db } from "./firebase.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { db, auth } from "./firebase.js";
 import { Routes, Route, Link } from "react-router-dom";
 
+
+
 /** Code */
+const Button = ({text, customStyle, press}) => {
+  return (
+    <button onClick={press}
+           className={`${customStyle} bg-red-500 font-bold flex justify-center items-center`}>
+      {text}
+    </button>
+  );
+}
 export default function App() {
   return (
     <>
@@ -76,20 +87,17 @@ function Formular() {
       setClickAl(false);
     }
   };
-
+  
   useEffect(() => {
     checkClickAlready();
     checkDataGetD();
-
-    // ✅ onSnapshot jetzt hier mit Cleanup
-    const unsubscribe = onSnapshot(collection(db, "FormTest"), (snapshot) => {
+     const checkDataOnSnap = onSnapshot(collection(db, "FormTest"), (snapshot) => {
       const datas = snapshot.docs.map((doc) => ({
         ...doc.data(),
       }));
       setArray(datas);
     });
-
-    return () => unsubscribe(); // Cleanup, wenn Komponente unmounted
+    return () => checkDataOnSnap(); 
   }, []);
 
   return (
@@ -148,5 +156,114 @@ function Formular() {
 }
 
 function Login() {
-  return <div>Login</div>;
+  const[registerUser, setRegisterUser] = useState('');
+  const[registerPassword, setRegisterPassword] = useState('');
+  const[user, setUser] = useState('');
+  const[password, setPassword] = useState('');
+  const[login, setLogin] = useState(false);
+  const[loggedIN, setLoggedIN] = useState(false);
+
+  const pressL = () => {
+    const newLogin = !login;
+    setLogin(newLogin);
+    setUser('');
+    setPassword('');
+    setRegisterPassword('');
+    setRegisterUser('');
+  };
+  
+  const log = async() => {
+    if(user.trim() != '' && password.trim() != '') {
+      await signInWithEmailAndPassword(auth, user, password)
+      .then((userCred) => {
+         const newLoggedIN = true;
+         setLoggedIN(newLoggedIN);
+         localStorage.setItem('loggedIN', newLoggedIN);
+         localStorage.setItem('username', userCred.user);
+      })
+      .catch((e) => {
+        alert(e);
+      });
+       
+    } 
+  };
+  const register = async() => {
+     if(registerUser.trim() != '' && registerPassword.trim() != '') {
+      await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
+      .then((userCred) => {
+        const newLoggedIN = true;
+        setLoggedIN(newLoggedIN);
+        localStorage.setItem('loggedIN', newLoggedIN);
+        localStorage.setItem('username', userCred.user);
+      })
+      .catch((e) => {
+        alert(e);
+      })
+       
+      }
+   
+  };
+  const logOut = async() => {
+    await signOut(auth)
+    .then(() => {
+       const newLoggedIN = false;
+       setLoggedIN(newLoggedIN);
+       localStorage.setItem('loggedIN', newLoggedIN);
+       localStorage.removeItem('username');
+    })
+    .catch((e) => {
+      alert(e);
+    });
+      
+       
+  }
+
+  
+      
+    
+  useEffect(() => {
+    if(localStorage.getItem('loggedIN') == "true") {
+      setLoggedIN(true);
+    } else {
+      setLoggedIN(false);
+    }
+  }, []);
+  return (
+    <>
+     {loggedIN == true ? (
+      <div>
+        Hi {user}!
+        <Button text={'Log out'} press={() => logOut()} customStyle={'w-32 h-32'}/>
+      </div>
+     ): (
+     <> 
+     <div className="w-full flex flex-row justify-center gap-10 cursor-pointer" onClick={pressL}>
+       <div className={login == false ? `text-black` : `text-gray-500`}>
+         Login
+       </div>
+       <div className={login == true ? `text-black` : `text-gray-500`}>
+        Register
+       </div>
+       </div>
+       {login == true ? (
+         <div className="w-full flex flex-col justify-center items-center">
+             Enter an email: 
+            <input type="text" value={registerUser} onChange={(e) => setRegisterUser(e.target.value)} className="bg-black text-white"/>
+            Create a password: 
+            <input type="text" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className="bg-black text-white"/>
+             <Button text={"Register"} customStyle={'w-32 h-20 text-lg'} press={() => register()}/>
+      </div>
+       ): (
+         <div className="w-full flex flex-col justify-center items-center">
+            Email: 
+            <input type="text" value={user} onChange={(e) => setUser(e.target.value)} className="bg-black text-white"/>
+            Password: 
+            <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-black text-white"/>
+             <Button text={"Login"} customStyle={'w-32 h-20 text-lg'} press={() => log()}/>
+         </div>
+       )}
+     </>
+    )}
+    </>
+  );
 }
