@@ -1,11 +1,11 @@
 /* Imports */
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext} from "react";
 import { addDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase.js";
 import { Routes, Route, Link } from "react-router-dom";
 
-
+const UserContext = createContext();
 
 /** Code */
 const Button = ({text, customStyle, press}) => {
@@ -17,8 +17,9 @@ const Button = ({text, customStyle, press}) => {
   );
 }
 export default function App() {
+  const[user, setUser] = useState('');
   return (
-    <>
+   <>
       <div>
         <Link to="/">
           <div>Startseite</div>
@@ -30,15 +31,17 @@ export default function App() {
         </Link>
         <Link to="/Login">
           <div className="w-full text-xl font-bold flex items-center justify-center">
-            Login
+            Login 
           </div>
         </Link>
       </div>
-      <Routes>
-        <Route path="/" element={<Startseite />} />
-        <Route path="/Formular" element={<Formular />} />
-        <Route path="/Login" element={<Login />} />
-      </Routes>
+      <UserContext.Provider value={{user, setUser}}>
+        <Routes>
+           <Route path="/" element={<Startseite />} />
+           <Route path="/Formular" element={<Formular />} />
+           <Route path="/Login" element={<Login />} />
+        </Routes>
+      </UserContext.Provider>  
     </>
   );
 }
@@ -158,10 +161,13 @@ function Formular() {
 function Login() {
   const[registerUser, setRegisterUser] = useState('');
   const[registerPassword, setRegisterPassword] = useState('');
-  const[user, setUser] = useState('');
   const[password, setPassword] = useState('');
+  const[userI, setUserI] = useState('');
   const[login, setLogin] = useState(false);
   const[loggedIN, setLoggedIN] = useState(false);
+  const[loading, setLoading] = useState(true);
+  const {user, setUser} = useContext(UserContext);
+
 
   const pressL = () => {
     const newLogin = !login;
@@ -173,13 +179,13 @@ function Login() {
   };
   
   const log = async() => {
-    if(user.trim() != '' && password.trim() != '') {
-      await signInWithEmailAndPassword(auth, user, password)
+    if(userI.trim() != '' && password.trim() != '') {
+      await signInWithEmailAndPassword(auth, userI, password)
       .then((userCred) => {
          const newLoggedIN = true;
          setLoggedIN(newLoggedIN);
          localStorage.setItem('loggedIN', newLoggedIN);
-         localStorage.setItem('username', userCred.user);
+         setUser(userCred.user.email);
       })
       .catch((e) => {
         alert(e);
@@ -193,8 +199,7 @@ function Login() {
       .then((userCred) => {
         const newLoggedIN = true;
         setLoggedIN(newLoggedIN);
-        localStorage.setItem('loggedIN', newLoggedIN);
-        localStorage.setItem('username', userCred.user);
+        setUser(userCred.user.email);
       })
       .catch((e) => {
         alert(e);
@@ -208,8 +213,6 @@ function Login() {
     .then(() => {
        const newLoggedIN = false;
        setLoggedIN(newLoggedIN);
-       localStorage.setItem('loggedIN', newLoggedIN);
-       localStorage.removeItem('username');
     })
     .catch((e) => {
       alert(e);
@@ -222,12 +225,24 @@ function Login() {
       
     
   useEffect(() => {
-    if(localStorage.getItem('loggedIN') == "true") {
-      setLoggedIN(true);
-    } else {
-      setLoggedIN(false);
-    }
+   
+    const authChanged = onAuthStateChanged(auth, (user) =>{
+      if(user) {
+        setLoggedIN(true);
+        setUser(user.email);
+      }
+      else {
+        setLoggedIN(false);
+        setUser('');
+      }
+      setLoading(false);
+    });
+    return () => authChanged();
   }, []);
+
+  if (loading === true) {
+    return <div>Lade Benutzerstatus...</div>; 
+  } 
   return (
     <>
      {loggedIN == true ? (
@@ -239,7 +254,7 @@ function Login() {
      <> 
      <div className="w-full flex flex-row justify-center gap-10 cursor-pointer" onClick={pressL}>
        <div className={login == false ? `text-black` : `text-gray-500`}>
-         Login
+         Login 
        </div>
        <div className={login == true ? `text-black` : `text-gray-500`}>
         Register
@@ -256,7 +271,7 @@ function Login() {
        ): (
          <div className="w-full flex flex-col justify-center items-center">
             Email: 
-            <input type="text" value={user} onChange={(e) => setUser(e.target.value)} className="bg-black text-white"/>
+            <input type="text" value={userI} onChange={(e) => setUserI(e.target.value)} className="bg-black text-white"/>
             Password: 
             <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-black text-white"/>
              <Button text={"Login"} customStyle={'w-32 h-20 text-lg'} press={() => log()}/>
