@@ -3,7 +3,7 @@ import { useState, useEffect, createContext, useContext} from "react";
 import { addDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase.js";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
 
 const UserContext = createContext();
 
@@ -18,19 +18,20 @@ const Button = ({text, customStyle, press}) => {
 }
 export default function App() {
   const[user, setUser] = useState('');
+  const location = useLocation();
   return (
    <>
-      <div>
+      <div className="w-full text-xl font-bold flex items-center justify-around">
         <Link to="/">
-          <div>Startseite</div>
+          <div className={location.pathname === '/' ? 'text-red-500': 'text-black'}>Startseite</div>
         </Link>
         <Link to="/Formular">
-          <div className="w-full text-xl font-bold flex items-center justify-center">
+          <div className={location.pathname === '/Formular' ? `text-red-500`: 'text-black'} >
             Formular
           </div>
         </Link>
         <Link to="/Login">
-          <div className="w-full text-xl font-bold flex items-center justify-center">
+          <div className={location.pathname === '/Login' ? `text-red-500`: 'text-black'}>
             Login 
           </div>
         </Link>
@@ -57,6 +58,7 @@ function Formular() {
   const [clickAl, setClickAl] = useState(false);
   const [array, setArray] = useState([]);
   const [arrayG, setArrayG] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const addFormular = async () => {
     try {
@@ -81,6 +83,7 @@ function Formular() {
       ...doc.data(),
     }));
     setArrayG(datas);
+    setLoading(false);
   };
 
   const checkClickAlready = () => {
@@ -99,10 +102,13 @@ function Formular() {
         ...doc.data(),
       }));
       setArray(datas);
+      setLoading(false);
     });
     return () => checkDataOnSnap(); 
   }, []);
-
+  if(loading === true) {
+    return <div>Lade Daten...</div>;
+  }
   return (
     <div className="flex flex-col w-full justify-center items-center gap-3">
       {clickAl === true ? (
@@ -229,7 +235,7 @@ function Login() {
     const authChanged = onAuthStateChanged(auth, (user) =>{
       if(user) {
         setLoggedIN(true);
-        setUser(user.email);
+        setUser(user.email); 
       }
       else {
         setLoggedIN(false);
@@ -238,7 +244,7 @@ function Login() {
       setLoading(false);
     });
     return () => authChanged();
-  }, []);
+  }, [setUser]);
 
   if (loading === true) {
     return <div>Lade Benutzerstatus...</div>; 
