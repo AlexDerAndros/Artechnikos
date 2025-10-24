@@ -1,9 +1,11 @@
 /* Imports */
 import { useState, useEffect, createContext, useContext} from "react";
-import { addDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query} from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { db, auth } from "./firebase.js";
+import { db, auth, storage, } from "./firebase.js";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 
 const UserContext = createContext();
 
@@ -18,7 +20,23 @@ const Button = ({text, customStyle, press}) => {
 }
 export default function App() {
   const[user, setUser] = useState('');
+  const[userID, setUserID] = useState('');
+  const[admin, setAdmin] = useState(false);
+  const[loggedIN, setLoggedIN] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+      const checkAdmin = async() => {
+       const q = query(collection(db, 'users'),
+       where('user','==', user));
+       const snapshot = await getDocs(q);
+       snapshot.forEach((doc) => {
+         const datas = doc.data();
+         setAdmin(datas.isAdmin);
+       });
+    };
+    checkAdmin();
+  },  [user]);
   return (
    <>
       <div className="w-full text-xl font-bold flex items-center justify-around">
@@ -35,12 +53,18 @@ export default function App() {
             Login 
           </div>
         </Link>
+        <Link to="/Gallery">
+          <div className={location.pathname === '/Gallery' ? `text-red-500`: 'text-black'}>
+            Gallery
+          </div>
+        </Link>
       </div>
-      <UserContext.Provider value={{user, setUser}}>
+      <UserContext.Provider value={{user, setUser, admin, loggedIN, setLoggedIN, setUserID}}>
         <Routes>
            <Route path="/" element={<Startseite />} />
            <Route path="/Formular" element={<Formular />} />
            <Route path="/Login" element={<Login />} />
+           <Route path="/Gallery" element={<Gallery />} />
         </Routes>
       </UserContext.Provider>  
     </>
@@ -97,15 +121,16 @@ function Formular() {
   useEffect(() => {
     checkClickAlready();
     checkDataGetD();
-     const checkDataOnSnap = onSnapshot(collection(db, "FormTest"), (snapshot) => {
-      const datas = snapshot.docs.map((doc) => ({
+    const checkDataOnSnap = onSnapshot(collection(db, 'FormTest'), (snapshot) => {
+      const datas = snapshot.docs.map(doc => ({
         ...doc.data(),
       }));
       setArray(datas);
       setLoading(false);
     });
-    return () => checkDataOnSnap(); 
-  }, []);
+    return () => checkDataOnSnap();
+  },[]);
+  
   if(loading === true) {
     return <div>Lade Daten...</div>;
   }
@@ -170,9 +195,8 @@ function Login() {
   const[password, setPassword] = useState('');
   const[userI, setUserI] = useState('');
   const[login, setLogin] = useState(false);
-  const[loggedIN, setLoggedIN] = useState(false);
   const[loading, setLoading] = useState(true);
-  const {user, setUser} = useContext(UserContext);
+  const {user, setUser, loggedIN, setLoggedIN, setUserID} = useContext(UserContext);
 
 
   const pressL = () => {
@@ -201,18 +225,21 @@ function Login() {
   };
   const register = async() => {
      if(registerUser.trim() != '' && registerPassword.trim() != '') {
-      await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
-      .then((userCred) => {
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
         const newLoggedIN = true;
         setLoggedIN(newLoggedIN);
         setUser(userCred.user.email);
-      })
-      .catch((e) => {
+        setUserID(userCred.user.uid);
+        await setDoc(doc(db, 'users', userCred.user.uid), {
+         user: userCred.user.email,
+         isAdmin: false
+       });
+
+      }catch(e) {
         alert(e);
-      })
-       
       }
-   
+     }
   };
   const logOut = async() => {
     await signOut(auth)
@@ -244,7 +271,7 @@ function Login() {
       setLoading(false);
     });
     return () => authChanged();
-  }, [setUser]);
+  }, [setLoggedIN, setUser]);
 
   if (loading === true) {
     return <div>Lade Benutzerstatus...</div>; 
@@ -285,6 +312,51 @@ function Login() {
        )}
      </>
     )}
+    </>
+  );
+}
+
+function Gallery() {
+  const {admin, setLoggedIN, setUser} = useContext(UserContext);
+  const[file, setFile] = useState(null);
+  const[url, setUrl] = useState('');
+  
+  const uploadImage = async() => {
+    if(file) {
+      const imageRef = ref(storage, `images/${file.name}`);
+      try {
+        await uploadBytes(imageRef, file);
+        const downloadedUrl = await getDownloadURL(imageRef);
+        setUrl(downloadedUrl);
+      }catch(e) {
+        alert(e);
+      }
+    }
+  }
+   useEffect(() => {
+   
+    const authChanged = onAuthStateChanged(auth, (user) =>{
+      if(user) {
+        setLoggedIN(true);
+        setUser(user.email); 
+      }
+      else {
+        setLoggedIN(false);
+        setUser('');
+      }
+    });
+    return () => authChanged();
+  }, [setLoggedIN, setUser]);
+  return (
+    <>
+    {admin == true && ( <> 
+       <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])}/>
+       <Button customStyle={"w-32 h-20 text-lg"} text={'Upload'} press={uploadImage}/>
+       {url && (
+        < img src={url} className="w-32 h-32"/>
+       )} 
+       </>)}
+     
     </>
   );
 }
