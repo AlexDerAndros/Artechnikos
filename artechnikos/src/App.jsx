@@ -20,7 +20,6 @@ const Button = ({text, customStyle, press}) => {
 }
 export default function App() {
   const[user, setUser] = useState('');
-  const[userID, setUserID] = useState('');
   const[admin, setAdmin] = useState(false);
   const[loggedIN, setLoggedIN] = useState(false);
   const location = useLocation();
@@ -59,7 +58,7 @@ export default function App() {
           </div>
         </Link>
       </div>
-      <UserContext.Provider value={{user, setUser, admin, loggedIN, setLoggedIN, setUserID}}>
+      <UserContext.Provider value={{user, setUser, admin, loggedIN, setLoggedIN}}>
         <Routes>
            <Route path="/" element={<Startseite />} />
            <Route path="/Formular" element={<Formular />} />
@@ -196,7 +195,7 @@ function Login() {
   const[userI, setUserI] = useState('');
   const[login, setLogin] = useState(false);
   const[loading, setLoading] = useState(true);
-  const {user, setUser, loggedIN, setLoggedIN, setUserID} = useContext(UserContext);
+  const {user, setUser, loggedIN, setLoggedIN} = useContext(UserContext);
 
 
   const pressL = () => {
@@ -230,7 +229,6 @@ function Login() {
         const newLoggedIN = true;
         setLoggedIN(newLoggedIN);
         setUser(userCred.user.email);
-        setUserID(userCred.user.uid);
         await setDoc(doc(db, 'users', userCred.user.uid), {
          user: userCred.user.email,
          isAdmin: false
