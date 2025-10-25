@@ -2,7 +2,7 @@
 import { useState, useEffect, createContext, useContext} from "react";
 import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query} from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { db, auth, storage, } from "./firebase.js";
+import { db, auth, storage, } from "./config/firebase.js";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -318,6 +318,7 @@ function Gallery() {
   const {admin, setLoggedIN, setUser} = useContext(UserContext);
   const[file, setFile] = useState(null);
   const[url, setUrl] = useState('');
+  const[images, setImages] = useState([]);
   
   const uploadImage = async() => {
     if(file) {
@@ -326,11 +327,15 @@ function Gallery() {
         await uploadBytes(imageRef, file);
         const downloadedUrl = await getDownloadURL(imageRef);
         setUrl(downloadedUrl);
+        await addDoc(collection(db, 'images'), {
+          url: downloadedUrl
+        });
       }catch(e) {
         alert(e);
       }
     }
-  }
+  };
+  
    useEffect(() => {
    
     const authChanged = onAuthStateChanged(auth, (user) =>{
@@ -343,7 +348,16 @@ function Gallery() {
         setUser('');
       }
     });
-    return () => authChanged();
+    const getImages = onSnapshot(collection(db, 'images'), (snapshot) => {
+      const datas = snapshot.docs.map(doc => ({
+        ...doc.data(),
+      }));
+      setImages(datas);
+    });
+    return () => {
+       authChanged();
+       getImages();
+    }; 
   }, [setLoggedIN, setUser]);
   return (
     <>
@@ -354,7 +368,12 @@ function Gallery() {
         < img src={url} className="w-32 h-32"/>
        )} 
        </>)}
-     
+      <div>
+       {images.length > 0 ? (<span>Gespeicherte Bilder:</span>):(<span></span>)}
+       {images.map((image, index) => (
+          <img src={image.url} key={index} className="w-32 h-32"/>
+       ))}
+      </div> 
     </>
   );
 }
