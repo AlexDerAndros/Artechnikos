@@ -1,10 +1,10 @@
 /* Imports */
 import { useState, useEffect, createContext, useContext} from "react";
-import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query} from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query, serverTimestamp} from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth, storage, } from "./config/firebase.js";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, } from "firebase/storage";
 
 
 const UserContext = createContext();
@@ -18,6 +18,11 @@ const Button = ({text, customStyle, press}) => {
     </button>
   );
 }
+const LoadingPage = ({text})  => {
+   return (
+    <div>Lade {text} ...</div>
+   );
+};
 export default function App() {
   const[user, setUser] = useState('');
   const[admin, setAdmin] = useState(false);
@@ -131,7 +136,7 @@ function Formular() {
   },[]);
   
   if(loading === true) {
-    return <div>Lade Daten...</div>;
+    return <LoadingPage text={"Daten"}/>
   }
   return (
     <div className="flex flex-col w-full justify-center items-center gap-3">
@@ -250,11 +255,8 @@ function Login() {
     });
       
        
-  }
+  };
 
-  
-      
-    
   useEffect(() => {
    
     const authChanged = onAuthStateChanged(auth, (user) =>{
@@ -272,7 +274,7 @@ function Login() {
   }, [setLoggedIN, setUser]);
 
   if (loading === true) {
-    return <div>Lade Benutzerstatus...</div>; 
+    return <LoadingPage text={"Benutzerstatus"}/> 
   } 
   return (
     <>
@@ -318,7 +320,9 @@ function Gallery() {
   const {admin, setLoggedIN, setUser} = useContext(UserContext);
   const[file, setFile] = useState(null);
   const[url, setUrl] = useState('');
+  const[name, setName] = useState('');
   const[images, setImages] = useState([]);
+  const[loading, setLoading] = useState(true);
   
   const uploadImage = async() => {
     if(file) {
@@ -327,8 +331,11 @@ function Gallery() {
         await uploadBytes(imageRef, file);
         const downloadedUrl = await getDownloadURL(imageRef);
         setUrl(downloadedUrl);
+        setName(file.name);
         await addDoc(collection(db, 'images'), {
-          url: downloadedUrl
+          url: downloadedUrl,
+          name: file.name,
+          createdAt: serverTimestamp()
         });
       }catch(e) {
         alert(e);
@@ -350,15 +357,19 @@ function Gallery() {
     });
     const getImages = onSnapshot(collection(db, 'images'), (snapshot) => {
       const datas = snapshot.docs.map(doc => ({
+        id: doc.id,
         ...doc.data(),
       }));
       setImages(datas);
+      setLoading(false);
     });
     return () => {
        authChanged();
        getImages();
     }; 
   }, [setLoggedIN, setUser]);
+
+ 
   return (
     <>
     {admin == true && ( <> 
@@ -367,13 +378,23 @@ function Gallery() {
        {url && (
         < img src={url} className="w-32 h-32"/>
        )} 
+       {name && (
+        <span>Dateienname:{name}</span>
+       )}
        </>)}
-      <div>
-       {images.length > 0 ? (<span>Gespeicherte Bilder:</span>):(<span></span>)}
-       {images.map((image, index) => (
-          <img src={image.url} key={index} className="w-32 h-32"/>
-       ))}
+      {loading === true ? (
+        <LoadingPage text={images.length === 1 ? "Bild" : "Bilder"}/>
+      ): (
+       <div>
+        {images.length > 0 ? (<span>Gespeichertes Bild:</span>): images.length > 2 ?(<span>Gespeicherte Bilder</span>): (<span></span>)}
+        {images.map((image) => (
+          <>
+           <img src={image.url} key={image.id} className="w-32 h-32" alt={image.name}/>
+           {image.createdAt?.toDate ? image.createdAt.toDate().toLocaleDateString() : "unbekannt"}
+          </> 
+        ))}
       </div> 
+     )}
     </>
   );
 }
