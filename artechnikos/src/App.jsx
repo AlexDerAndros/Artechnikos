@@ -1,7 +1,7 @@
 /* Imports */
 import { useState, useEffect, createContext, useContext} from "react";
 import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query, serverTimestamp} from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { db, auth, storage, } from "./config/firebase.js";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { ref, uploadBytes, getDownloadURL, } from "firebase/storage";
@@ -228,21 +228,26 @@ function Login() {
     } 
   };
   const register = async() => {
-     if(registerUser.trim() != '' && registerPassword.trim() != '') {
-      try {
-        const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword)
-        const newLoggedIN = true;
-        setLoggedIN(newLoggedIN);
-        setUser(userCred.user.email);
-        await setDoc(doc(db, 'users', userCred.user.uid), {
-         user: userCred.user.email,
-         isAdmin: false
-       });
+      if (registerUser.trim() != '' && registerPassword.trim() != '') {
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword);
+      await sendEmailVerification(userCred.user);
+      alert("Bestätigungslink versendet!");
 
-      }catch(e) {
-        alert(e);
-      }
-     }
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          await setDoc(doc(db, 'users', user.uid), {
+            user: user.email,
+            isAdmin: false,
+          });
+          setLoggedIN(true);
+          setUser(user.email);
+        }
+      });
+    } catch (e) {
+      alert(e);
+    }
+  }
   };
   const logOut = async() => {
     await signOut(auth)
