@@ -230,32 +230,19 @@ function Login() {
   };
  const register = async () => {
   if (registerUser.trim() !== '' && registerPassword.trim() !== '') {
+   try { 
      const newClickR = true;
      localStorage.setItem("clickR", newClickR);
      setClickR(true);
      setLoading(true);
-    try {
+    
       const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword);
-
       await sendEmailVerification(userCred.user);
       localStorage.setItem('valueR',"Bestätigungslink wurde erfolgreich gesendet!");
-      const authChanged = onAuthStateChanged(auth, (user) =>{
-      if(user && user.emailVerified == true) {
-        setLoggedIN(true);
-        setUser(user.email); 
-      }
-      else if (user && !user.emailVerified) {
-          localStorage.setItem('valueR', "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du dich anmelden kannst.");
-          setLoggedIN(false);
-          setUser('');
-        }
-      else {
-        setLoggedIN(false);
-        setUser('');
-      }
-       setLoading(false);
-    });
-    return () => authChanged();
+        await setDoc(doc(db, 'users', userCred.user.uid), {
+         user: userCred.user.email,
+         isAdmin: false,
+      });
      
       
     } catch (e) {
