@@ -20,7 +20,7 @@ const Button = ({text, customStyle, press}) => {
 }
 const LoadingPage = ({text})  => {
    return (
-    <div>Lade {text} ...</div>
+    <div>{text} ...</div>
    );
 };
 export default function App() {
@@ -136,7 +136,7 @@ function Formular() {
   },[]);
   
   if(loading === true) {
-    return <LoadingPage text={"Daten"}/>
+    return <LoadingPage text={"Lade Daten"}/>
   }
   return (
     <div className="flex flex-col w-full justify-center items-center gap-3">
@@ -201,6 +201,7 @@ function Login() {
   const[login, setLogin] = useState(false);
   const[loading, setLoading] = useState(true);
   const {user, setUser, loggedIN, setLoggedIN} = useContext(UserContext);
+  const[clickR, setClickR] = useState(false);
 
 
   const pressL = () => {
@@ -227,28 +228,42 @@ function Login() {
        
     } 
   };
-  const register = async() => {
-      if (registerUser.trim() != '' && registerPassword.trim() != '') {
+ const register = async () => {
+  if (registerUser.trim() !== '' && registerPassword.trim() !== '') {
+     const newClickR = true;
+     localStorage.setItem("clickR", newClickR);
+     setClickR(true);
+     setLoading(true);
     try {
       const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword);
-      await sendEmailVerification(userCred.user);
-      alert("Bestätigungslink versendet!");
 
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          await setDoc(doc(db, 'users', user.uid), {
-            user: user.email,
-            isAdmin: false,
-          });
-          setLoggedIN(true);
-          setUser(user.email);
+      await sendEmailVerification(userCred.user);
+      localStorage.setItem('valueR',"Bestätigungslink wurde erfolgreich gesendet!");
+      const authChanged = onAuthStateChanged(auth, (user) =>{
+      if(user && user.emailVerified == true) {
+        setLoggedIN(true);
+        setUser(user.email); 
+      }
+      else if (user && !user.emailVerified) {
+          localStorage.setItem('valueR', "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du dich anmelden kannst.");
+          setLoggedIN(false);
+          setUser('');
         }
-      });
+      else {
+        setLoggedIN(false);
+        setUser('');
+      }
+       setLoading(false);
+    });
+    return () => authChanged();
+     
+      
     } catch (e) {
-      alert(e);
+      alert(e.message); 
     }
-  }
-  };
+  } 
+};
+
   const logOut = async() => {
     await signOut(auth)
     .then(() => {
@@ -263,23 +278,34 @@ function Login() {
   };
 
   useEffect(() => {
-   
+    if(localStorage.getItem('clickR') == "true") {
+      setClickR(true);
+    } else {
+      setClickR(false);
+    }
     const authChanged = onAuthStateChanged(auth, (user) =>{
-      if(user) {
+      if(user && user.emailVerified == true) {
         setLoggedIN(true);
         setUser(user.email); 
       }
+      else if (user && !user.emailVerified) {
+          localStorage.setItem('valueR', "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du dich anmelden kannst.");
+          setLoggedIN(false);
+          setUser('');
+        }
       else {
         setLoggedIN(false);
         setUser('');
       }
-      setLoading(false);
+       setLoading(false);
     });
     return () => authChanged();
-  }, [setLoggedIN, setUser]);
+  
+
+  }, [setLoggedIN, setUser, clickR]);
 
   if (loading === true) {
-    return <LoadingPage text={"Benutzerstatus"}/> 
+    return <LoadingPage text={clickR == true ? localStorage.getItem('valueR') : " Lade Benutzerstatus"}/> 
   } 
   return (
     <>
