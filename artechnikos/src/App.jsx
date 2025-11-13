@@ -1,16 +1,14 @@
 /* Imports */
-import { useState, useEffect, createContext, useContext} from "react";
-import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query, serverTimestamp} from "firebase/firestore";
+import { useState, useEffect, useContext} from "react";
+import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query} from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
-import { db, auth, storage, } from "./config/firebase.js";
+import { db, auth } from "./config/firebase.js";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
-import { ref, uploadBytes, getDownloadURL, } from "firebase/storage";
-
-
-const UserContext = createContext();
+import {UserContext} from './Contexts/UserContext.js';
+import {Gallery} from './Gallery/gallery';
 
 /** Code */
-const Button = ({text, customStyle, press}) => {
+export const Button = ({text, customStyle, press}) => {
   return (
     <button onClick={press}
            className={`${customStyle} bg-red-500 font-bold flex justify-center items-center`}>
@@ -18,11 +16,20 @@ const Button = ({text, customStyle, press}) => {
     </button>
   );
 }
-const LoadingPage = ({text})  => {
+export const LoadingPage = ({text})  => {
    return (
     <div>{text} ...</div>
    );
 };
+
+function Gallery1() {
+  return (
+    <>
+     Hallo
+     <Gallery/>
+    </>
+  );
+}
 export default function App() {
   const[user, setUser] = useState('');
   const[admin, setAdmin] = useState(false);
@@ -68,7 +75,7 @@ export default function App() {
            <Route path="/" element={<Startseite />} />
            <Route path="/Formular" element={<Formular />} />
            <Route path="/Login" element={<Login />} />
-           <Route path="/Gallery" element={<Gallery />} />
+           <Route path="/Gallery" element={<Gallery1 />} />
         </Routes>
       </UserContext.Provider>  
     </>
@@ -213,83 +220,83 @@ function Login() {
     setRegisterUser('');
   };
   
-  const log = async() => {
-    if(userI.trim() != '' && password.trim() != '') {
-      await signInWithEmailAndPassword(auth, userI, password)
-      .then((userCred) => {
-         const newLoggedIN = true;
-         setLoggedIN(newLoggedIN);
-         localStorage.setItem('loggedIN', newLoggedIN);
-         setUser(userCred.user.email);
-      })
-      .catch((e) => {
-        alert(e);
-      });
+ 
        
-    } 
-  };
- const register = async () => {
-  if (registerUser.trim() !== '' && registerPassword.trim() !== '') {
-   try { 
-     const newClickR = true;
-     localStorage.setItem("clickR", newClickR);
-     setClickR(true);
-     setLoading(true);
-    
-      const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword);
-      await sendEmailVerification(userCred.user);
-      localStorage.setItem('valueR',"Bestätigungslink wurde erfolgreich gesendet!");
-        await setDoc(doc(db, 'users', userCred.user.uid), {
-         user: userCred.user.email,
-         isAdmin: false,
-      });
-     
-      
-    } catch (e) {
-      alert(e.message); 
-    }
-  } 
-};
-
-  const logOut = async() => {
-    await signOut(auth)
-    .then(() => {
-       const newLoggedIN = false;
-       setLoggedIN(newLoggedIN);
-    })
-    .catch((e) => {
-      alert(e);
-    });
-      
-       
-  };
-
-  useEffect(() => {
-    if(localStorage.getItem('clickR') == "true") {
-      setClickR(true);
-    } else {
-      setClickR(false);
-    }
-    const authChanged = onAuthStateChanged(auth, (user) =>{
-      if(user && user.emailVerified == true) {
+   
+ useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      if (user.emailVerified) {
         setLoggedIN(true);
-        setUser(user.email); 
-      }
-      else if (user && !user.emailVerified) {
-          localStorage.setItem('valueR', "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du dich anmelden kannst.");
-          setLoggedIN(false);
-          setUser('');
-        }
-      else {
+        setUser(user.email);
+      } else {
+        localStorage.setItem(
+          'valueR',
+          "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du dich anmelden kannst."
+        );
         setLoggedIN(false);
         setUser('');
       }
-       setLoading(false);
-    });
-    return () => authChanged();
-  
+    } else {
+      setLoggedIN(false);
+      setUser('');
+    }
+    setLoading(false); 
+  });
 
-  }, [setLoggedIN, setUser, clickR]);
+  return () => unsubscribe();
+}, [setLoggedIN, setUser]);
+
+const log = async() => {
+  if (userI.trim() && password.trim()) {
+    setLoading(true);
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, userI, password);
+      setLoggedIN(true);
+      localStorage.setItem('loggedIN', true);
+      setUser(userCred.user.email);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+};
+
+const register = async () => {
+  if (registerUser.trim() && registerPassword.trim()) {
+    setLoading(true);
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword);
+      await sendEmailVerification(userCred.user);
+      localStorage.setItem('valueR', "Bestätigungslink wurde erfolgreich gesendet!");
+      await setDoc(doc(db, 'users', userCred.user.uid), {
+        user: userCred.user.email,
+        isAdmin: false,
+      });
+      setClickR(true);
+      localStorage.setItem("clickR", true);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+};
+
+const logOut = async () => {
+  setLoading(true);
+  try {
+    await signOut(auth);
+    setLoggedIN(false);
+    setUser('');
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (loading === true) {
     return <LoadingPage text={clickR == true ? localStorage.getItem('valueR') : " Lade Benutzerstatus"}/> 
@@ -330,89 +337,6 @@ function Login() {
        )}
      </>
     )}
-    </>
-  );
-}
-
-function Gallery() {
-  const {admin, setLoggedIN, setUser} = useContext(UserContext);
-  const[file, setFile] = useState(null);
-  const[url, setUrl] = useState('');
-  const[name, setName] = useState('');
-  const[images, setImages] = useState([]);
-  const[loading, setLoading] = useState(true);
-  
-  const uploadImage = async() => {
-    if(file) {
-      const imageRef = ref(storage, `images/${file.name}`);
-      try {
-        await uploadBytes(imageRef, file);
-        const downloadedUrl = await getDownloadURL(imageRef);
-        setUrl(downloadedUrl);
-        setName(file.name);
-        await addDoc(collection(db, 'images'), {
-          url: downloadedUrl,
-          name: file.name,
-          createdAt: serverTimestamp()
-        });
-      }catch(e) {
-        alert(e);
-      }
-    }
-  };
-  
-   useEffect(() => {
-   
-    const authChanged = onAuthStateChanged(auth, (user) =>{
-      if(user) {
-        setLoggedIN(true);
-        setUser(user.email); 
-      }
-      else {
-        setLoggedIN(false);
-        setUser('');
-      }
-    });
-    const getImages = onSnapshot(collection(db, 'images'), (snapshot) => {
-      const datas = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setImages(datas);
-      setLoading(false);
-    });
-    return () => {
-       authChanged();
-       getImages();
-    }; 
-  }, [setLoggedIN, setUser]);
-
- 
-  return (
-    <>
-    {admin == true && ( <> 
-       <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])}/>
-       <Button customStyle={"w-32 h-20 text-lg"} text={'Upload'} press={uploadImage}/>
-       {url && (
-        < img src={url} className="w-32 h-32"/>
-       )} 
-       {name && (
-        <span>Dateienname:{name}</span>
-       )}
-       </>)}
-      {loading === true ? (
-        <LoadingPage text={images.length === 1 ? "Bild" : "Bilder"}/>
-      ): (
-       <div>
-        {images.length > 0 ? (<span>Gespeichertes Bild:</span>): images.length > 2 ?(<span>Gespeicherte Bilder</span>): (<span></span>)}
-        {images.map((image) => (
-          <>
-           <img src={image.url} key={image.id} className="w-32 h-32" alt={image.name}/>
-           {image.createdAt?.toDate ? image.createdAt.toDate().toLocaleDateString() : "unbekannt"}
-          </> 
-        ))}
-      </div> 
-     )}
     </>
   );
 }
