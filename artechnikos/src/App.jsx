@@ -1,5 +1,5 @@
 /* Imports */
-import { useState, useEffect} from "react";
+import { useState, useEffect, useRef} from "react";
 import { collection, getDocs, where, query} from "firebase/firestore";
 import { db} from "./config/firebase.js";
 import { Routes, Route, Link, useLocation, Form } from "react-router-dom";
@@ -7,7 +7,10 @@ import {UserContext} from './Contexts/UserContext.js';
 import {Gallery} from './Gallery/gallery';
 import { Login } from "./Login/login.jsx";
 import { Formular } from "./Formular/formular.jsx";
+import {gsap} from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+gsap.registerPlugin(ScrollTrigger);
 /** Code */
 export const Button = ({text, customStyle, press}) => {
   return (
@@ -77,6 +80,35 @@ export default function App() {
 }
 
 function Startseite() {
-  return <div>Startseite</div>;
+  const box1 = useRef(null);
+  const box2 = useRef(null);
+  const box3 = useRef(null);
+  
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.fromTo(box1.current,
+       {opacity: 0, x:-300}, {opacity:1, x:0, duration: 1, ease: "power3.inOut", 
+        scrollTrigger: {trigger: box1.current, start: "top 90%", end: "top 20%", toggleActions: "play none none reverse"}});
+      gsap.fromTo(box2.current,
+       {opacity: 0, x:-300}, {opacity:1, x:0, duration: 1, ease: "power3.inOut", 
+        scrollTrigger: {trigger: box2.current, start: "top 90%", end: "top 20%", toggleActions: "play none none reverse"}});
+      gsap.fromTo(box3.current,
+       {opacity: 0, x:-300}, {opacity:1, x:0, duration: 1, ease: "power3.inOut", 
+        scrollTrigger: {trigger: box3.current, start: "top 90%", end: "top 20%", toggleActions: "play none none reverse"}});
+
+      });
+  return () => {
+    ctx.revert();
+  };
+   
+  }, []);
+
+  return (
+    <div className="w-full flex flex-col justify-center items-center gap-y-10 mt-10 overflow-y-hidden">
+      <div className="w-1/2 h-200 bg-red-500" ref={box1}></div>
+      <div className="w-1/2 h-200 bg-yellow-500" ref={box2}></div>
+      <div className="w-1/2 h-200 bg-orange-500" ref={box3}></div>
+    </div>
+  );
 }
 
