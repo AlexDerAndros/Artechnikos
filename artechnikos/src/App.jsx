@@ -1,11 +1,12 @@
 /* Imports */
-import { useState, useEffect, useContext} from "react";
-import { addDoc, collection, doc, getDocs, onSnapshot, setDoc, where, query} from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
-import { db, auth } from "./config/firebase.js";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { useState, useEffect} from "react";
+import { collection, getDocs, where, query} from "firebase/firestore";
+import { db} from "./config/firebase.js";
+import { Routes, Route, Link, useLocation, Form } from "react-router-dom";
 import {UserContext} from './Contexts/UserContext.js';
 import {Gallery} from './Gallery/gallery';
+import { Login } from "./Login/login.jsx";
+import { Formular } from "./Formular/formular.jsx";
 
 /** Code */
 export const Button = ({text, customStyle, press}) => {
@@ -22,14 +23,7 @@ export const LoadingPage = ({text})  => {
    );
 };
 
-function Gallery1() {
-  return (
-    <>
-     Hallo
-     <Gallery/>
-    </>
-  );
-}
+
 export default function App() {
   const[user, setUser] = useState('');
   const[admin, setAdmin] = useState(false);
@@ -75,7 +69,7 @@ export default function App() {
            <Route path="/" element={<Startseite />} />
            <Route path="/Formular" element={<Formular />} />
            <Route path="/Login" element={<Login />} />
-           <Route path="/Gallery" element={<Gallery1 />} />
+           <Route path="/Gallery" element={<Gallery />} />
         </Routes>
       </UserContext.Provider>  
     </>
@@ -86,257 +80,3 @@ function Startseite() {
   return <div>Startseite</div>;
 }
 
-function Formular() {
-  const [valueVN, setValueVN] = useState("");
-  const [valueNN, setValueNN] = useState("");
-  const [valueA, setValueA] = useState("");
-  const [clickAl, setClickAl] = useState(false);
-  const [array, setArray] = useState([]);
-  const [arrayG, setArrayG] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const addFormular = async () => {
-    try {
-      if (valueA.trim() !== "" && valueNN.trim() !== "" && valueVN.trim() !== "") {
-        await addDoc(collection(db, "FormTest"), {
-          name: valueVN + "," + valueNN,
-          age: valueA,
-        });
-
-        const newClickAl = true;
-        setClickAl(newClickAl);
-        localStorage.setItem("clickAlready", newClickAl);
-      }
-    } catch (e) {
-      alert(e);
-    }
-  };
-
-  const checkDataGetD = async () => {
-    const snapshot = await getDocs(collection(db, "FormTest"));
-    const datas = snapshot.docs.map((doc) => ({
-      ...doc.data(),
-    }));
-    setArrayG(datas);
-    setLoading(false);
-  };
-
-  const checkClickAlready = () => {
-    if (localStorage.getItem("clickAlready") === "true") {
-      setClickAl(true);
-    } else {
-      setClickAl(false);
-    }
-  };
-  
-  useEffect(() => {
-    checkClickAlready();
-    checkDataGetD();
-    const checkDataOnSnap = onSnapshot(collection(db, 'FormTest'), (snapshot) => {
-      const datas = snapshot.docs.map(doc => ({
-        ...doc.data(),
-      }));
-      setArray(datas);
-      setLoading(false);
-    });
-    return () => checkDataOnSnap();
-  },[]);
-  
-  if(loading === true) {
-    return <LoadingPage text={"Lade Daten"}/>
-  }
-  return (
-    <div className="flex flex-col w-full justify-center items-center gap-3">
-      {clickAl === true ? (
-        <>Sie haben bereits das Formular abgeschickt!</>
-      ) : (
-        <>
-          <div className="font-bold">Formular</div>
-          <input
-            type="text"
-            placeholder="Vorname..."
-            onChange={(e) => setValueVN(e.target.value)}
-            className="text-white bg-black p-2"
-            value={valueVN}
-          />
-          {valueVN}
-          <input
-            type="text"
-            placeholder="Nachname..."
-            onChange={(e) => setValueNN(e.target.value)}
-            className="text-white bg-black p-2"
-            value={valueNN}
-          />
-          {valueNN}
-          <input
-            type="text"
-            placeholder="Alter..."
-            onChange={(e) => setValueA(e.target.value)}
-            className="text-white bg-black p-2"
-            value={valueA}
-          />
-          {valueA}
-          <button onClick={addFormular} className="bg-red-500">
-            Abschicken
-          </button>
-        </>
-      )}
-
-      <div className="w-full flex flex-col items-center gap-5">
-        Formular Test onSnapshot:
-        {array.map((item, index) => (
-          <span key={index}>
-            Name: {item.name}, Age: {item.age}
-          </span>
-        ))}
-        Formular Test getDocs:
-        {arrayG.map((item, index) => (
-          <span key={index}>
-            Name: {item.name}, Age: {item.age}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Login() {
-  const[registerUser, setRegisterUser] = useState('');
-  const[registerPassword, setRegisterPassword] = useState('');
-  const[password, setPassword] = useState('');
-  const[userI, setUserI] = useState('');
-  const[login, setLogin] = useState(false);
-  const[loading, setLoading] = useState(true);
-  const {user, setUser, loggedIN, setLoggedIN} = useContext(UserContext);
-  const[clickR, setClickR] = useState(false);
-
-
-  const pressL = () => {
-    const newLogin = !login;
-    setLogin(newLogin);
-    setUser('');
-    setPassword('');
-    setRegisterPassword('');
-    setRegisterUser('');
-  };
-  
- 
-       
-   
- useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (user) {
-      if (user.emailVerified) {
-        setLoggedIN(true);
-        setUser(user.email);
-      } else {
-        localStorage.setItem(
-          'valueR',
-          "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du dich anmelden kannst."
-        );
-        setLoggedIN(false);
-        setUser('');
-      }
-    } else {
-      setLoggedIN(false);
-      setUser('');
-    }
-    setLoading(false); 
-  });
-
-  return () => unsubscribe();
-}, [setLoggedIN, setUser]);
-
-const log = async() => {
-  if (userI.trim() && password.trim()) {
-    setLoading(true);
-    try {
-      const userCred = await signInWithEmailAndPassword(auth, userI, password);
-      setLoggedIN(true);
-      localStorage.setItem('loggedIN', true);
-      setUser(userCred.user.email);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-};
-
-const register = async () => {
-  if (registerUser.trim() && registerPassword.trim()) {
-    setLoading(true);
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, registerUser, registerPassword);
-      await sendEmailVerification(userCred.user);
-      localStorage.setItem('valueR', "Bestätigungslink wurde erfolgreich gesendet!");
-      await setDoc(doc(db, 'users', userCred.user.uid), {
-        user: userCred.user.email,
-        isAdmin: false,
-      });
-      setClickR(true);
-      localStorage.setItem("clickR", true);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-};
-
-const logOut = async () => {
-  setLoading(true);
-  try {
-    await signOut(auth);
-    setLoggedIN(false);
-    setUser('');
-  } catch (e) {
-    alert(e.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  if (loading === true) {
-    return <LoadingPage text={clickR == true ? localStorage.getItem('valueR') : " Lade Benutzerstatus"}/> 
-  } 
-  return (
-    <>
-     {loggedIN == true ? (
-      <div>
-        Hi {user}!
-        <Button text={'Log out'} press={() => logOut()} customStyle={'w-32 h-32'}/>
-      </div>
-     ): (
-     <> 
-     <div className="w-full flex flex-row justify-center gap-10 cursor-pointer" onClick={pressL}>
-       <div className={login == false ? `text-black` : `text-gray-500`}>
-         Login 
-       </div>
-       <div className={login == true ? `text-black` : `text-gray-500`}>
-        Register
-       </div>
-       </div>
-       {login == true ? (
-         <div className="w-full flex flex-col justify-center items-center">
-             Enter an email: 
-            <input type="text" value={registerUser} onChange={(e) => setRegisterUser(e.target.value)} className="bg-black text-white"/>
-            Create a password: 
-            <input type="text" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className="bg-black text-white"/>
-             <Button text={"Register"} customStyle={'w-32 h-20 text-lg'} press={() => register()}/>
-      </div>
-       ): (
-         <div className="w-full flex flex-col justify-center items-center">
-            Email: 
-            <input type="text" value={userI} onChange={(e) => setUserI(e.target.value)} className="bg-black text-white"/>
-            Password: 
-            <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-black text-white"/>
-             <Button text={"Login"} customStyle={'w-32 h-20 text-lg'} press={() => log()}/>
-         </div>
-       )}
-     </>
-    )}
-    </>
-  );
-}
