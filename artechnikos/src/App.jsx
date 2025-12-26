@@ -47,26 +47,32 @@ export default function App() {
   },  [user]);
   return (
    <>
-      <div className="w-full text-xl font-bold flex items-center justify-around">
-        <Link to="/">
-          <div className={location.pathname === '/' ? 'text-red-500': 'text-black'}>Startseite</div>
-        </Link>
-        <Link to="/Formular">
-          <div className={location.pathname === '/Formular' ? `text-red-500`: 'text-black'} >
-            Formular
-          </div>
-        </Link>
-        <Link to="/Login">
-          <div className={location.pathname === '/Login' ? `text-red-500`: 'text-black'}>
-            Login 
-          </div>
-        </Link>
-        <Link to="/Gallery">
-          <div className={location.pathname === '/Gallery' ? `text-red-500`: 'text-black'}>
-            Gallery
-          </div>
-        </Link>
-      </div>
+      <div className="w-full text-xl font-text font-bold flex items-center justify-around mt-2 ">
+        <div className="flex flex-row w-1/2 items-center">
+         <img src="./Logo_ohneHintergrund.png" className="w-1/3 h-50"/>
+         <div className="font-bold text-xl">ARTECHNIKOS</div>
+        </div>
+        <span className="text-lg font-light flex flex-row gap-10">
+         <Link to="/">
+           <div className={location.pathname === '/' ? 'text-red-500': 'text-mainC'}>Startseite</div>
+         </Link>
+         {/* <Link to="/Formular">
+           <div className={location.pathname === '/Formular' ? `text-red-500`: 'text-black'} >
+             Formular
+           </div>
+         </Link> */}
+         <Link to="/Login">
+           <div className={location.pathname === '/Login' ? `text-red-500`: 'text-mainC'}>
+             Login 
+           </div>
+         </Link>
+         <Link to="/Gallery">
+           <div className={location.pathname === '/Gallery' ? `text-red-500`: 'text-mainC'}>
+             Gallery
+           </div>
+         </Link>
+        </span>  
+       </div>
       <UserContext.Provider value={{user, setUser, admin, loggedIN, setLoggedIN}}>
         <Routes>
            <Route path="/" element={<Startseite />} />

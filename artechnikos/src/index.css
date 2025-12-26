@@ -1,1 +1,18 @@
 @import "tailwindcss";
+body {
+    min-height: 100vh;
+    background: linear-gradient(
+    135deg,
+    #E7C26F 0%,
+    #EBC57F 40%,
+    #ECC87C 70%,
+    #F0CA87 100%
+  );
+   background-repeat: no-repeat;
+   background-attachment: fixed;
+   color: #1e364b; 
+}
+@theme {
+    --color-mainC: #1e364b;
+    --font-text: 'Playfair Display', serif;
+}
