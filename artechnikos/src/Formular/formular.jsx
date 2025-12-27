@@ -49,6 +49,7 @@ export function Formular() {
   
   useEffect(() => {
     checkClickAlready();
+   
     checkDataGetD();
     const checkDataOnSnap = onSnapshot(collection(db, 'FormTest'), (snapshot) => {
       const datas = snapshot.docs.map(doc => ({
@@ -61,8 +62,8 @@ export function Formular() {
   },[]);
   
   if(loading === true) {
-    return <LoadingPage text={"Lade Daten"}/>
-  }
+     return <LoadingPage text={"Lade Daten"}/>
+    }
   return (
     <div className="flex flex-col w-full justify-center items-center gap-3">
       {clickAl === true ? (

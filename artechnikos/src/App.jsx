@@ -49,10 +49,10 @@ export default function App() {
    <>
       <div className="w-full text-xl font-text font-bold flex items-center justify-around mt-2 ">
         <div className="flex flex-row w-1/2 items-center">
-         <img src="./Logo_ohneHintergrund.png" className="w-1/3 h-50"/>
-         <div className="font-bold text-xl">ARTECHNIKOS</div>
+         <img src="./Logo_ohneHintergrund.png" className="w-18 h-18"/>
+         <div className="font-bold text-lg">ARTECHNIKOS</div>
         </div>
-        <span className="text-lg font-light flex flex-row gap-10">
+        <span className="text-base font-light flex flex-row gap-10">
          <Link to="/">
            <div className={location.pathname === '/' ? 'text-red-500': 'text-mainC'}>Startseite</div>
          </Link>

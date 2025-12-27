@@ -7,11 +7,12 @@ import {UserContext} from '../Contexts/UserContext';
 import {Button, LoadingPage} from '../App';
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Link } from "react-router-dom";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function Gallery() {
-  const {admin, setLoggedIN, setUser} = useContext(UserContext);
+  const {admin, setLoggedIN, setUser, loggedIN} = useContext(UserContext);
   const[file, setFile] = useState(null);
   const[url, setUrl] = useState('');
   const[name, setName] = useState('');
@@ -19,8 +20,8 @@ export function Gallery() {
   const[loading, setLoading] = useState(true);
   const listRefs = useRef([]);
   const containerRef = useRef(null);
-
-  const uploadImage = async() => {
+  
+   const uploadImage = async() => {
     if(file) {
       const imageRef = ref(storage, `images/${file.name}`);
       try {
@@ -88,7 +89,8 @@ export function Gallery() {
           ease: "power3.inOut",
           scrollTrigger: {
             trigger: el,
-            start: "top 80%",
+            start: "top 90%",
+            end: "top 20%",
           }
         }
       );
@@ -98,7 +100,9 @@ export function Gallery() {
   return () => ctx.revert();
 }, [images]);
 
-
+  
+ 
+  if(loggedIN == true) {
   return (
     <>
     {admin == true && ( <> 
@@ -133,4 +137,14 @@ export function Gallery() {
      )}
     </>
   );
+} else {
+    return (
+      <div className="font-inter flex flex-col justify-center items-center w-full pt-30 text-xl"> 
+        Bitte einloggen um die Gallery zu sehen unter diesem Link: 
+        <Link to="/Login" className="underline text-blue-500 font-bold">
+        Logge dich jetzt ein!
+        </Link>
+      </div>
+    );
+}
 }

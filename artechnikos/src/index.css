@@ -1,18 +1,14 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
 body {
     min-height: 100vh;
-    background: linear-gradient(
-    135deg,
-    #E7C26F 0%,
-    #EBC57F 40%,
-    #ECC87C 70%,
-    #F0CA87 100%
-  );
-   background-repeat: no-repeat;
-   background-attachment: fixed;
-   color: #1e364b; 
+    background: #E7C26F ;
+    color: #1e364b;
+    overflow-x: hidden; 
 }
 @theme {
     --color-mainC: #1e364b;
     --font-text: 'Playfair Display', serif;
+    --font-inter: 'Inter', sans-serif;
 }
