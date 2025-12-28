@@ -122,15 +122,18 @@ export function Gallery() {
        
         {images.length > 0 ? (<span>Gespeichertes Bild:</span>): images.length > 2 ?(<span>Gespeicherte Bilder</span>): (<span></span>)}
        <div ref={containerRef}>
-  {images.map((image, index) => (
+ {images.map((image, index) => (
+  <span key={image.id}>
     <img
-      key={image.id}
       src={image.url}
       className="w-100 h-200"
-      alt={image.name}
-      ref={el => listRefs.current[index] = el}
+      ref={el => (listRefs.current[index] = el)}
     />
-  ))}
+   <p>
+      {image.createdAt?.toDate().toLocaleDateString("de-DE")}
+   </p>
+  </span>
+))}
 </div>
 
       </div> 
