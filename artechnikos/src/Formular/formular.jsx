@@ -22,7 +22,7 @@ export function Formular() {
         });
 
         const newClickAl = true;
-        setClickAl(newClickAl);
+        setClickAl(false);
         localStorage.setItem("clickAlready", newClickAl);
       }
     } catch (e) {
@@ -41,7 +41,7 @@ export function Formular() {
 
   const checkClickAlready = () => {
     if (localStorage.getItem("clickAlready") === "true") {
-      setClickAl(true);
+      setClickAl(false);
     } else {
       setClickAl(false);
     }
@@ -66,6 +66,7 @@ export function Formular() {
     }
   return (
     <div className="flex flex-col w-full justify-center items-center gap-3">
+      
       {clickAl === true ? (
         <>Sie haben bereits das Formular abgeschickt!</>
       ) : (
