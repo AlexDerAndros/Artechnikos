@@ -24,6 +24,7 @@ export function Formular() {
         const newClickAl = true;
         setClickAl(false);
         localStorage.setItem("clickAlready", newClickAl);
+        checkDataGetD();
       }
     } catch (e) {
       alert(e);
