@@ -140,7 +140,7 @@ export function Gallery() {
      )}
     </>
   );
-} else {
+} else if(loading === false && loggedIN == false) {
     return (
       <div className="font-inter flex flex-col justify-center items-center w-full pt-30 text-xl"> 
         Bitte einloggen um die Gallery zu sehen unter diesem Link: 
